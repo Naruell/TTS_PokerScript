@@ -1,0 +1,572 @@
+-- Global Variable --
+GUIDs =
+{
+  ["GameState"] = "0d7946",
+  ["Stake"] = "d0d261",
+  ["10"] = "432e30",
+  ["50"] = "2ba024",
+  ["100"] = "c551c4",
+  ["500"] = "efdd74",
+  ["1000"] = "d91322",
+
+  ["WhitePannel"] = "1d72be",
+  ["RedPannel"] = "18a911",
+  ["OrangePannel"] = "ee960f",
+  ["YellowPannel"] = "14ca94",
+  ["GreenPannel"] = "e67273",
+  ["BluePannel"] = "50abb4",
+  ["PurplePannel"] = "8d901e",
+  ["PinkPannel"] = "0e6cb0",
+}
+
+CardZone =
+{
+  ["Discard"] = "aee8c2",
+  ["Deck"] = "74dc68",
+  ["First"] = "c38ec5",
+  ["Second"] = "daa590",
+  ["Third"] = "194377",
+  ["Fourth"] = "e1e456",
+ }
+
+ChipTypeName = {"10", "50", "100", "500", "1000"}
+
+BetZone =
+{
+  ["10"] = "0e8c3c",
+  ["50"] = "e20268",
+  ["100"] = "db9ef3",
+  ["500"] = "0c9178",
+  ["1000"] = "ea549b",
+  ["Total"] = "eb71c4",
+}
+
+ChipHiddenZone =
+{
+  ["White"] = "f56460",
+  ["Red"] = "4326d1",
+  ["Orange"] = "5a3b4d",
+  ["Yellow"] = "01c242",
+  ["Green"] = "5088af",
+  ["Blue"] = "dfcdea",
+  ["Purple"] = "ba7d70",
+  ["Pink"] = "07cb3e",
+}
+
+colourList = {"White", "Red", "Orange", "Yellow", "Green", "Blue","Purple","Pink"}
+
+Players =
+{
+  ["White"] = { ["join"] = true, ["showHand"] = false, ["RevealPos"] = {-27.43, 4.38, -7.25}, ["RevealOffset"] = {["x"] = 0.69, ["z"] = -0.40}, ["RevealRot"] = {0.00, 30.00, 0.00}},
+  ["Red"] = { ["join"] = true, ["showHand"] = false, ["RevealPos"] = {-30.56, 4.38, 3.15}, ["RevealOffset"] = {["x"] = -0.40, ["z"] = -0.69}, ["RevealRot"] = {0.00, 300.00, 0.00}},
+  ["Orange"] = { ["join"] = true, ["showHand"] = false, ["RevealPos"] = {-21.71, 4.37, 9.48}, ["RevealOffset"] = {["x"] = -0.80, ["z"] = 0.00}, ["RevealRot"] = {0.00, 0.00, 0.00}},
+  ["Yellow"] = { ["join"] = true, ["showHand"] = false, ["RevealPos"] = {-6.53, 4.37, 9.42}, ["RevealOffset"] = {["x"] = -0.80, ["z"] = 0.00}, ["RevealRot"] = {0.00, 0.00, 0.00}},
+  ["Green"] = { ["join"] = true, ["showHand"] = false, ["RevealPos"] = {6.83, 4.37, 9.45}, ["RevealOffset"] = {["x"] = -0.80, ["z"] = 0.00}, ["RevealRot"] = {0.00, 0.00, 0.00}},
+  ["Blue"] = { ["join"] = true, ["showHand"] = false, ["RevealPos"] = {21.62, 4.38, 9.32}, ["RevealOffset"] = {["x"] = -0.80, ["z"] = 0.00}, ["RevealRot"] = {0.00, 0.00, 0.00}},
+  ["Purple"] = { ["join"] = true, ["showHand"] = false, ["RevealPos"] = {30.39, 4.38, 3.37}, ["RevealOffset"] = {["x"] = -0.40, ["z"] = 0.69}, ["RevealRot"] = {0.00, 240.00, 0.00}},
+  ["Pink"] = { ["join"] = true, ["showHand"] = false, ["RevealPos"] = {27.69, 4.38, -6.95}, ["RevealOffset"] = {["x"] = 0.69, ["z"] = 0.40}, ["RevealRot"] = {0.00, 330.00, 0.00}},
+}
+
+function TableCopy(orig)
+  local orig_type = type(orig)
+  local copy
+  if orig_type == "table" then
+      copy = {}
+      for orig_key, orig_value in pairs(orig) do
+          copy[orig_key] = orig_value
+      end
+  else
+      copy = orig
+  end
+  return copy
+end
+
+function getPlayerState(table)
+  return Players[table.colour][table.type]
+end
+
+function setPlayerState(table)
+  Players[table.colour][table.type] = table.value
+end
+
+
+StakeMoney = 20
+HighestBettingMoney = nil
+BossPlayer = nil
+DealerPlayer = nil
+CurrentPlayer = nil
+
+Player_BetMoney = -- -1 for die
+{
+  ["White"] = 0,
+  ["Red"] = 0,
+  ["Orange"] = 0,
+  ["Yellow"] = 0,
+  ["Green"] = 0,
+  ["Blue"] = 0,
+  ["Purple"] = 0,
+  ["Pink"] = 0,
+}
+
+function CalculateBettingMoney(table)
+  local money = nil
+
+  if table.type == "call" then
+    money = HighestBettingMoney
+
+  elseif table.type == "check" then
+    money = 0
+
+  elseif table.type == "bbing" then
+    money = StakeMoney
+
+  elseif table.type == "ddadang" then
+    money = (HighestBettingMoney * 2)
+
+  elseif table.type == "half" then
+    money = (CalculateMoneyInZone(BetZone["Total"]) / 2)
+
+  elseif table.type == "quarter" then
+    money = (CalculateMoneyInZone(BetZone["Total"]) / 4)
+
+  elseif table.type == "die" then
+    return -1
+  end
+
+  if money == nil then
+    printToAll("Error in CalcolateBettingMoney() in Global.ttslua : No matchable betting command.", {1, 0, 0})
+  end
+
+  if money % 10 != 0 then
+    money = money - (money % 10)
+  end
+
+  return money
+end
+
+function CalculateMoneyInZone(GUID)
+  local zone = getObjectFromGUID(GUID)
+  local totalChip = 0
+
+  for _, obj in ipairs(zone.getObjects()) do
+    if obj.tag == "Chip" then
+      local quantity = obj.getQuantity()
+      if quantity == -1 then quantity = 1 end
+
+      totalChip = totalChip + (obj.getValue() * quantity)
+    end
+  end
+
+  return totalChip
+end
+
+function GetPlayerMoney(table)
+  return CalculateMoneyInZone(ChipHiddenZone[table.colour])
+end
+
+function GetTableMoney()
+  return CalculateMoneyInZone(BetZone["Total"])
+end
+
+function GetNextPlayer(table)
+  local currentPlayer = table.colour
+  local playerIndex = nil
+
+  for index, colour in ipairs(colourList) do
+    if currentPlayer == colour then
+      playerIndex = index
+    end
+  end
+
+  local rotateColourList = {}
+  for i = 1, 8 do
+    if colourList[playerIndex + 1] == nil then
+      playerIndex = 0
+    end
+
+    rotateColourList[i] = colourList[playerIndex + 1]
+    playerIndex = playerIndex + 1
+  end
+
+  for _, colour in ipairs(rotateColourList) do
+    if Player[colour].seated and
+        Players[colour]["join"] == true and
+        Player_BetMoney[colour] != -1 and
+        GetPlayerMoney({colour = colour}) > 0 then
+
+      return colour
+    end
+  end
+
+  return nil
+end
+
+function SortBetZone()
+  local betZone = getObjectFromGUID(BetZone["Total"])
+  local totalChip = CalculateMoneyInZone(BetZone["Total"])
+
+  local chipType = {1000, 500, 100, 50, 10}
+  local chipAmount = {0, 0, 0, 0, 0}
+  local typeIndex = 1
+
+  while totalChip > 9 do
+    while totalChip - chipType[typeIndex] >= 0 do
+      totalChip = totalChip - chipType[typeIndex]
+      chipAmount[typeIndex] = chipAmount[typeIndex] + 1
+    end
+
+    typeIndex = typeIndex + 1
+  end
+
+  for _, obj in ipairs(betZone.getObjects()) do
+    if obj.tag == "Chip" then
+      obj.destruct()
+    end
+  end
+
+  local chipBuilt_in = { "Chip_1000", "Chip_500", "Chip_100", "Chip_50", "Chip_10"}
+  local index = 1
+  for _, amount in ipairs(chipAmount) do
+    local zonePos = getObjectFromGUID(BetZone[ChipTypeName[index]]).getPosition()
+    local rot = {0.00, 0.00, 0.00}
+
+    local count = 0
+
+    while count < amount do
+      spawnObject({
+        type              = chipBuilt_in[index],
+        position          = zonePos,
+        rotation          = rot,
+      })
+
+      count = count + 1
+    end
+
+    index = index + 1
+  end
+end
+
+function GetPlayer_BetMoney(table)
+  return Player_BetMoney[table.colour]
+end
+
+function SetPlayer_BetMoney(table)
+  Player_BetMoney[table.colour] = table.value
+end
+
+-----------------------
+
+function GameSetUp()
+  UpdatePannelsToGameStarted()
+  if DealerPlayer == nil or
+     Player[DealerPlayer].seated == false or
+     getPlayerState({colour = DealerPlayer, type = "join"}) == false or
+     GetPlayerMoney({colour = DealerPlayer}) <= 0 then
+
+    for _, colour in ipairs(colourList) do
+      if Player[colour].seated and
+         getPlayerState({colour = colour, type = "join"}) == true and
+         GetPlayerMoney({colour = colour}) > 0 then
+        DealerPlayer = colour
+        break
+      end
+    end
+  end
+
+  if(DealerPlayer == nil) then
+    broadcastToAll("게임을 시작하기에 충분한 인원이 모이지 않았습니다.", {1, 0, 0})
+  else
+    getObjectFromGUID(GUIDs[DealerPlayer .. "Pannel"]).call("EnableBettingButtons", {color = DealerPlayer})
+    BossPlayer = DealerPlayer
+  end
+end
+
+function Betting(table)
+  local colour = table.colour
+  local type = table.type
+
+  local targetMoney = CalculateBettingMoney(table)
+  local needMoney = targetMoney - Player_BetMoney[colour]
+  local playerMoney = CalculateMoneyInZone(ChipHiddenZone[colour])
+
+  if needMoney < -1 then
+    printToAll("Error in Betting() in Global.ttslua : Money that" .. colour .. " player needs to pay is minus. (" .. needMoney .. ")", {1, 0, 0})
+  end
+
+  local finalBetMoney = nil
+  if targetMoney > playerMoney then
+    finalBetMoney = playerMoney
+    broadcastToAll(Player[colour].steam_name .. " : 올~~~인!!!! (" .. finalBetMoney .. " 칩)")
+  else
+    finalBetMoney = targetMoney
+
+    if type == "call" then
+      broadcastToAll(Player[colour].steam_name .. " : 콜! (" .. finalBetMoney .. " 칩)")
+
+    elseif type == "check" then
+      broadcastToAll(Player[colour].steam_name .. " : 체크. (" .. finalBetMoney .. " 칩)")
+
+    elseif type == "bbing" then
+      broadcastToAll(Player[colour].steam_name .. " : 삥! (" .. finalBetMoney .. " 칩)")
+
+    elseif type == "ddadang" then
+      broadcastToAll(Player[colour].steam_name .. " : 따당!! (" .. finalBetMoney .. " 칩)")
+
+    elseif type == "half" then
+      broadcastToAll(Player[colour].steam_name .. " : 하프!!! (" .. finalBetMoney .. " 칩)")
+
+    elseif type == "quarter" then
+      broadcastToAll(Player[colour].steam_name .. " : 쿼터!! (" .. finalBetMoney .. " 칩)")
+
+    elseif type == "die" then
+      broadcastToAll(Player[colour].steam_name .. " : 다이...")
+    end
+  end
+
+  Player_BetMoney[colour] = finalBetMoney
+  playerMoney = playerMoney - finalBetMoney
+
+  TakePlayerMoney({colour = colour, value = finalBetMoney})
+
+  if HighestBettingMoney == nil or HighestBettingMoney < finalBetMoney then
+    if finalBetMoney >= 0 then
+      HighestBettingMoney = finalBetMoney
+      BossPlayer = colour
+    end
+  end
+
+  -- 베팅 종류에 따른 추가 코드
+  if type == "call" then
+
+  elseif type == "check" then
+
+  elseif type == "bbing" then
+
+  elseif type == "ddadang" then
+
+  elseif type == "half" then
+
+  elseif type == "quarter" then
+
+  elseif type == "die" then
+
+    -- 카드 다 버리기
+    local dealingIndex = getObjectFromGUID("2cf817").getVar("DealingCardIndex")
+    local loc = TableCopy(Players[colour]["RevealPos"])
+    loc[1] = loc[1] + Players[colour]["RevealOffset"]["x"] * (dealingIndex - 3)
+    loc[3] = loc[3] + Players[colour]["RevealOffset"]["z"] * (dealingIndex - 3)
+
+    local rot =  TableCopy(Players[colour]["RevealRot"])
+    rot[3] = 180
+
+    for _, card in ipairs(Player[colour].getHandObjects()) do
+      card.setPosition(loc)
+      card.setRotation(rot)
+    end
+
+    if DealerPlayer == colour then
+      DealerPlayer = GetNextPlayer({colour = colour})
+    end
+  end
+
+  -- 베팅 정보 패널 업데이트
+  Wait.time(function() getObjectFromGUID("1a5cb7").call("UpdatePannel") end, 0.1)
+
+  if GetNextPlayer({colour = colour}) == BossPlayer then
+
+    if getObjectFromGUID("2cf817").getVar("DealingCardIndex") == 8 then
+      broadcastToAll("모든 플레이어가 베팅을 마쳤습니다. 마지막으로 베팅한 다음 사람부터 패를 공개해주세요.", {0, 1, 0})
+
+    else
+      broadcastToAll("모든 플레이어가 베팅을 마쳤습니다. 딜러는 카드를 딜해주세요.", {1, 1, 0})
+    end
+
+    getObjectFromGUID(GUIDs[colour .. "Pannel"]).call("DisableBettingButtons", {color = colour})
+
+  else
+    getObjectFromGUID(GUIDs[colour .. "Pannel"]).call("DisableBettingButtons", {color = colour})
+    getObjectFromGUID(GUIDs[GetNextPlayer({colour = colour}) .. "Pannel"]).call("EnableBettingButtons", {color = colour})
+  end
+end
+
+function ResetAllBetMoney()
+  for _, colour in ipairs(colourList) do
+    Player_BetMoney[colour] = 0
+  end
+end
+
+function SoftReset()
+  HighestBettingMoney = nil
+  BossPlayer = nil
+
+  for _, colour in ipairs(colourList) do
+    if Player_BetMoney[colour] != -1 then
+      Player_BetMoney[colour] = 0
+    end
+  end
+
+  getObjectFromGUID("1a5cb7").call("UpdatePannel")
+  Global.call("SortBetZone")
+
+  getObjectFromGUID(GUIDs[DealerPlayer .. "Pannel"]).call("EnableBettingButtons", {color = DealerPlayer})
+end
+
+function UpdatePannelsToGameStarted()
+  for _, colour in ipairs(colourList) do
+    getObjectFromGUID(GUIDs[colour .. "Pannel"]).call("DisableBettingButtons", {colour = colour})
+    getObjectFromGUID(GUIDs[colour .. "Pannel"]).call("DisableJoinButtons", {colour = colour})
+  end
+end
+
+function UpdatePannelsToGameFinished()
+  for _, colour in ipairs(colourList) do
+    getObjectFromGUID(GUIDs[colour .. "Pannel"]).call("DisableBettingButtons", {color = colour})
+    getObjectFromGUID(GUIDs[colour .. "Pannel"]).call("EnableJoinButtons", {color = colour})
+  end
+end
+
+function RemoveChips(colour)
+  for _, obj in ipairs(getObjectFromGUID(ChipHiddenZone[colour]).getObjects()) do
+    if obj.tag == "Chip" then
+      obj.destruct()
+    end
+  end
+end
+
+function SpawnChips(position, money)
+  local chipType = {1000, 500, 100, 50, 10}
+  local chipAmount = {0, 0, 0, 0, 0}
+  local typeIndex = 1
+
+  while money > 9 do
+    while money - chipType[typeIndex] >= 0 do
+      money = money - chipType[typeIndex]
+      chipAmount[typeIndex] = chipAmount[typeIndex] + 1
+    end
+
+    typeIndex = typeIndex + 1
+  end
+
+  local chipBuilt_in = { "Chip_1000", "Chip_500", "Chip_100", "Chip_50", "Chip_10"}
+  local index = 1
+  for _, amount in ipairs(chipAmount) do
+    local rot = {0.00, 0.00, 0.00}
+
+    local count = 0
+    while count < amount do
+      spawnObject({
+        type              = chipBuilt_in[index],
+        position          = position,
+        rotation          = rot,
+      })
+
+      count = count + 1
+    end
+
+    index = index + 1
+  end
+end
+
+function TakePlayerMoney(table)
+  RemoveChips(table.colour)
+  SpawnChips(getObjectFromGUID(ChipHiddenZone[table.colour]).getPosition(), CalculateMoneyInZone(ChipHiddenZone[table.colour]) - table.value)
+  SpawnChips(getObjectFromGUID(BetZone["Total"]).getPosition(), table.value)
+end
+-----------------
+
+function AddDiscardButtonsOnHand()
+  for _, colour in ipairs(colourList) do
+    for _, card in ipairs(Player[colour].getHandObjects()) do
+      card.createButton({
+        click_function = "Discard",
+        function_owner = self,
+        label = "버리기",
+        position = {0.10, 0.30, 0.10},
+        width = 850,
+        height = 400,
+        font_size = 200,
+        hover_color = {1, 0, 0}
+      })
+    end
+  end
+end
+
+function Discard(object, colour)
+  object.setLock(false)
+  object.setRotation({0, 0, 180})
+  object.setPosition(getObjectFromGUID(CardZone["Discard"]).getPosition())
+
+  for _, card in ipairs(Player[colour].getHandObjects()) do
+    card.clearButtons()
+  end
+
+  AddRevealButtonsOnHand(colour)
+end
+
+function AddRevealButtonsOnHand(colour)
+  for _, card in ipairs(Player[colour].getHandObjects()) do
+    card.createButton({
+      click_function = "Reveal",
+      function_owner = self,
+      label = "공개하기",
+      position = {0.10, 0.30, 0.10},
+      width = 850,
+      height = 400,
+      font_size = 200,
+      hover_color = {0, 1, 0}
+    })
+  end
+end
+
+function Reveal(object, colour)
+  object.setLock(false)
+  object.clearButtons()
+  local pos = Players[colour]["RevealPos"]
+
+  local rot = object.getRotation()
+  rot.z = 0
+
+  object.setPosition(pos)
+  object.setRotation(rot)
+
+  for _, card in ipairs(Player[colour].getHandObjects()) do
+    card.clearButtons()
+  end
+
+  Wait.time(function() object.setLock(true) end, 1.0)
+end
+
+--------------------------
+
+function ResetGame()
+  ResetAllBetMoney()
+
+  HighestBettingMoney = nil
+  BossPlayer = nil
+  DealerPlayer = nil
+end
+
+--------------------------
+
+function onLoad()
+  for index, colour in ipairs(colourList) do
+    local colourTable = {"White", "Red", "Orange", "Yellow", "Green", "Blue","Purple","Pink"}
+    table.remove(colourTable, index)
+    getObjectFromGUID(ChipHiddenZone[colour]).setName("ChipHiddenZone")
+    getObjectFromGUID(ChipHiddenZone[colour]).setDescription(colour)
+  end
+end
+
+function onObjectEnterScriptingZone(zone, enter_object)
+  if zone.getName() == "ChipHiddenZone" and enter_object.tag == "Chip" then
+
+  elseif zone.getGUID() == BetZone["Total"] and enter_object.tag == "Chip" then
+    Wait.time(function() getObjectFromGUID("1a5cb7").call("UpdatePannel") end, 0.1)
+  end
+end
+
+function onObjectLeaveScriptingZone(zone, enter_object)
+    if zone.getGUID() == BetZone["Total"] and enter_object.tag == "Chip" then
+      Wait.time(function() getObjectFromGUID("1a5cb7").call("UpdatePannel") end, 0.1)
+    end
+end

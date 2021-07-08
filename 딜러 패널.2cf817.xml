@@ -1,0 +1,36 @@
+<TableLayout cellSpacing="10" width="420" height="200" columnWidths="100 220 100" cellBackgroundColor="clear" offsetXY="0 0">
+    <Row>
+        <Cell>
+        </Cell>
+        <Cell>
+            <HorizontalLayout spacing="6">
+                <Button id="setup" onClick="SetUp" active="true" fontSize="28" fontStyle="Bold">셋업</Button>
+                <Button id="deal" onClick="Deal" active="false" fontSize="28" fontStyle="Bold">딜</Button>
+                <Button id="cleanup" onClick="GameEnd" active="false" fontSize="28" fontStyle="Bold">클린업</Button>
+            </HorizontalLayout>
+        </Cell>
+        <Cell>
+        </Cell>
+    </Row>
+    <Row>
+        <Cell>
+            <VerticalLayout spacing="6">
+                <InputField
+                    id="stake"
+                    onEndEdit="SetStake"
+                    fontSize="16"
+                    characterValidation="Decimal"
+                    characterLimit="4"
+                    placeholder="판돈     (10의 배수)">20
+                </InputField>
+                <Text id="text1" color="#FFFFFF" fontSize="18" alignment="UpperLeft">시작 판돈 (10의 배수)</Text>
+            </VerticalLayout>
+        </Cell>
+        <Cell>
+          <HorizontalLayout spacing="6">
+              <Button id="gameend" onClick="GameEnd" active="false" fontSize="28" fontStyle="Bold">라운드 종료</Button>
+              <Button id="rotatedealer" onClick="RotateDealer" active="true" fontSize="28" fontStyle="Bold">딜러 : ?</Button>
+          </HorizontalLayout>
+        </Cell>
+    </Row>
+</TableLayout>

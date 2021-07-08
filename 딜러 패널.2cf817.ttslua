@@ -1,0 +1,246 @@
+-- Global Variable --
+
+GUIDs =
+{
+  ["GameState"] = "0d7946",
+  ["Stake"] = "d0d261",
+}
+
+CardZone =
+{
+  ["Discard"] = "aee8c2",
+  ["Deck"] = "74dc68",
+  ["First"] = "c38ec5",
+  ["Second"] = "daa590",
+  ["Third"] = "194377",
+  ["Fourth"] = "e1e456",
+ }
+
+BetZone =
+{
+  ["10"] = "0e8c3c",
+  ["50"] = "e20268",
+  ["100"] = "db9ef3",
+  ["500"] = "0c9178",
+  ["1000"] = "ea549b",
+}
+
+colourList = {'White', 'Red', 'Orange', 'Yellow', 'Green', 'Blue','Purple','Pink'}
+GameStateList = {"SETUP", "GAME", "ENDED"}
+-------------------
+
+-- Local Variable --
+DealingCardIndex = 4
+
+function OnLoad()
+end
+
+function SetUp()
+  broadcastToAll("딜러 : 게임 셋팅하겠습니다.")
+
+  if getObjectFromGUID(CardZone["Deck"]).getObjects()[1] == nil then
+    Init()
+
+  else
+    CleanUp()
+    getObjectFromGUID(CardZone["Deck"]).getObjects()[1].shuffle()
+    Wait.time(function() getObjectFromGUID(CardZone["Deck"]).getObjects()[1].shuffle() end , 0.3)
+    Wait.time(function() SetUpDeal() end , 0.5)
+  end
+
+
+  -- Changing UI
+  self.UI.setAttribute("setup", "active", false)
+  self.UI.setAttribute("deal", "active", true)
+  self.UI.setAttribute("cleanup", "active", false)
+  self.UI.setAttribute("stake", "active", false)
+  self.UI.setAttribute("text1", "active", false)
+  self.UI.setAttribute("gameend", "active", true)
+  self.UI.setAttribute("rotatedealer", "active", false)
+
+  Global.call("GameSetUp")
+end
+
+function Init()
+  -- Set the name of each cards
+  local shapes = {"S", "D", "H", "C"}
+  local numbers = {"A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"}
+
+  local spadeCards = getObjectFromGUID(CardZone["First"]).getObjects()[1]
+  local diamondCards = getObjectFromGUID(CardZone["Second"]).getObjects()[1]
+  local heartCards = getObjectFromGUID(CardZone["Third"]).getObjects()[1]
+  local cloverCards = getObjectFromGUID(CardZone["Fourth"]).getObjects()[1]
+
+  local cardsTable = {spadeCards, diamondCards, heartCards, cloverCards}
+
+  for shapeIndex, cards in ipairs(cardsTable) do
+    for cardIndex, card in pairs(cards.getObjects()) do
+
+      local pos = getObjectFromGUID(CardZone["Deck"]).getPosition()
+      pos.y = 1.23
+      cards.takeObject({
+        position          = pos,
+        callback_function = function(object) object.setName(shapes[shapeIndex] .. numbers[cardIndex]) end,
+        smooth            = false,
+        flip              = true,
+      })
+    end
+  end
+
+  -- Shuffle the deck
+  Wait.time(function() getObjectFromGUID(CardZone["Deck"]).getObjects()[1].shuffle() end, 1.0)
+  Wait.time(function() getObjectFromGUID(CardZone["Deck"]).getObjects()[1].shuffle() end, 1.3)
+
+  -- Deal four cards to joined players
+  Wait.time(function() SetUpDeal() end, 1.5)
+end
+
+function SetUpDeal()
+  for _, colour in ipairs(colourList) do
+    if Player[colour].seated and
+       Global.call("getPlayerState", { colour = colour, type = "join"}) and
+       Global.call("GetPlayerMoney", { colour = colour }) >= Global.getVar("StakeMoney") then
+
+      getObjectFromGUID(CardZone["Deck"]).getObjects()[1].deal(4, colour)
+      Global.call("TakePlayerMoney", { colour = colour, value = Global.getVar("StakeMoney")})
+
+    else
+      Global.call("SetPlayer_BetMoney", {colour = colour, value = -1})
+    end
+  end
+
+  Wait.time(function() Global.call("AddDiscardButtonsOnHand") end, 0.7)
+end
+
+function Deal()
+  -- Dealer Message
+  if DealingCardIndex == 7 then
+    broadcastToAll("딜러 : 히든 카드 딜링합니다.")
+  else
+    broadcastToAll("딜러 : " .. DealingCardIndex .. "번째 카드 딜링합니다.")
+  end
+
+  if DealingCardIndex == 6 then
+    Wait.time(function() broadcastToAll("딜러 : 다음 카드는 히든 카드입니다.") end, 0.8)
+  end
+
+  -- Dealing Cards
+    for _, colour in ipairs(colourList) do
+      if Player[colour].seated and
+         Global.call("getPlayerState", { colour = colour, type = "join"}) and
+         Global.call("GetPlayer_BetMoney", {colour = colour}) != -1 then
+
+        if DealingCardIndex == 7 then
+          getObjectFromGUID(CardZone["Deck"]).getObjects()[1].dealToColorWithOffset({0.00, 0.00, 0.00}, false, colour)
+
+        else
+          local loc = Global.getTable("Players")[colour]["RevealPos"]
+          loc[1] = loc[1] + Global.getTable("Players")[colour]["RevealOffset"]["x"] * (DealingCardIndex - 3)
+          loc[3] = loc[3] + Global.getTable("Players")[colour]["RevealOffset"]["z"] * (DealingCardIndex - 3)
+
+          local rot =  Global.getTable("Players")[colour]["RevealRot"]
+
+          getObjectFromGUID(CardZone["Deck"]).getObjects()[1].takeObject({
+            position          = loc,
+            rotation          = rot,
+            callback_function = function(object) Wait.time(function() object.setLock(true) end, 1.0) end,
+            smooth            = true,
+            flip              = true,
+          })
+        end
+      end
+    end
+
+  DealingCardIndex = DealingCardIndex + 1
+  Global.call("SoftReset")
+
+  if DealingCardIndex == 8 then
+    self.UI.setAttribute("setup", "active", false)
+    self.UI.setAttribute("deal", "active", false)
+    self.UI.setAttribute("cleanup", "active", true)
+    self.UI.setAttribute("stake", "active", false)
+    self.UI.setAttribute("text1", "active", false)
+    self.UI.setAttribute("gameend", "active", false)
+    self.UI.setAttribute("rotatedealer", "active", false)
+  end
+end
+
+function GameEnd()
+  broadcastToAll("딜러 : 라운드가 끝났습니다. 테이블을 정리합니다.")
+  CleanUp()
+  ResetDealingCardIndex()
+  Global.call("ResetGame")
+  Global.call("UpdatePannelsToGameFinished")
+  getObjectFromGUID("1a5cb7").call("UpdatePannel")
+
+  self.UI.setAttribute("setup", "active", true)
+  self.UI.setAttribute("deal", "active", false)
+  self.UI.setAttribute("cleanup", "active", false)
+  self.UI.setAttribute("stake", "active", true)
+  self.UI.setAttribute("text1", "active", true)
+  self.UI.setAttribute("gameend", "active", false)
+  self.UI.setAttribute("rotatedealer", "active", true)
+end
+
+function CleanUp()
+  local pos = getObjectFromGUID(CardZone["Deck"]).getPosition()
+  pos.y = 1.23
+
+  for _, obj in ipairs(getAllObjects()) do
+    if obj.tag == "Card" or obj.tag == "Deck" then
+      obj.setLock(false)
+      obj.setPosition(pos)
+      obj.setRotation({0.00, 180.00, 180.00})
+    end
+  end
+end
+
+function SetStake(player, var)
+  local originalStake = Global.getVar("StakeMoney")
+  local stakeTo = tonumber(var)
+
+  if stakeTo % 10 != 0 then
+    stakeTo = stakeTo - (stakeTo % 10)
+  end
+
+  if(stakeTo <= 0) then
+    printToAll("Warnning in SetStake() in 2cf817.ttslua : minimum stake is 10", {1, 1, 0})
+    stakeTo = 10
+  end
+
+  if originalStake != stakeTo then
+    Global.SetVar("StakeMoney", tonumber(stakeTo))
+    broadcastToAll("판돈이 변경되었습니다!\n" .. originalStake .. " -> " .. stakeTo)
+  end
+end
+
+function ResetDealingCardIndex()
+  DealingCardIndex = 4
+end
+
+function RotateDealer()
+  local colourList = {'White', 'Red', 'Orange', 'Yellow', 'Green', 'Blue','Purple','Pink'}
+  local currentDealer = Global.getVar("DealerPlayer")
+  local dealerTo = nil
+
+  if(currentDealer == nil) then
+    for _, colour in ipairs(colourList) do
+      if Player[colour].seated and
+         Global.call("getPlayerState", {colour = colour, type = "join"}) == true then
+        dealerTo = colour
+        break
+      end
+    end
+  else
+    dealerTo = Global.call("GetNextPlayer", {colour = currentDealer})
+  end
+
+  if dealerTo == nil then
+    self.UI.setAttribute("rotatedealer", "text", "딜러 : ?")
+    self.UI.setAttribute("rotatedealer", "color", "#FFFFFF")
+  else
+    self.UI.setAttribute("rotatedealer", "text", "딜러 : " .. dealerTo)
+    self.UI.setAttribute("rotatedealer", "color", dealerTo)
+  end
+  Global.setVar("DealerPlayer", dealerTo)
+end

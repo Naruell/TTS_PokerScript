@@ -1,0 +1,19 @@
+function UpdatePannel()
+  local money = Global.call("GetTableMoney")
+  self.UI.setAttribute("tablemoney", "text", "전체 판돈 : " .. money)
+
+  local currentBetting = Global.getVar("HighestBettingMoney")
+  if currentBetting == nil then
+    self.UI.setAttribute("highestbettingmoney", "text", "현재 베팅 : -")
+  else
+    self.UI.setAttribute("highestbettingmoney", "text", "현재 베팅 : " .. currentBetting)
+  end
+
+  local dealerPlayer = Global.getVar("DealerPlayer")
+  if dealerPlayer == nil then
+    self.UI.setAttribute("dealer", "text", "딜러 : -")
+  else
+    self.UI.setAttribute("dealer", "text", "딜러 : " .. dealerPlayer)
+    self.UI.setAttribute("dealer", "color", dealerPlayer)
+  end
+end

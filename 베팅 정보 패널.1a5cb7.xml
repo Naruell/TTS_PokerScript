@@ -1,0 +1,23 @@
+<TableLayout cellSpacing="4" width="420" height="180" columnWidths="210 200" cellBackgroundColor="clear" offsetXY="105 0">
+  <Row>
+    <Cell>
+      <HorizontalLayout spacing="1">
+      <Text id="tablemoney" color="#FFFFFF" fontSize="25" alignment="UpperLeft">전체 판돈 : 0</Text>
+      </HorizontalLayout>
+    </Cell>
+  </Row>
+  <Row>
+    <Cell>
+      <HorizontalLayout spacing="1">
+      <Text id="highestbettingmoney" color="#FFFFFF" fontSize="25" alignment="UpperLeft">현재 베팅 : -</Text>
+      </HorizontalLayout>
+    </Cell>
+  </Row>
+  <Row>
+    <Cell>
+      <HorizontalLayout spacing="1">
+      <Text id="dealer" color="#FFFFFF" fontSize="25" alignment="UpperLeft">딜러 : -</Text>
+      </HorizontalLayout>
+    </Cell>
+  </Row>
+</TableLayout>

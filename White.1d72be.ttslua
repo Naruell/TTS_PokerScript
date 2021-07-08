@@ -1,0 +1,146 @@
+function EnableBettingButtons(player)
+  self.UI.setAttribute("call", "active", true)
+  self.UI.setAttribute("check", "active", true)
+  self.UI.setAttribute("bbing", "active", true)
+  self.UI.setAttribute("ddadang", "active", true)
+  self.UI.setAttribute("half", "active", true)
+  self.UI.setAttribute("quarter", "active", true)
+  self.UI.setAttribute("die", "active", true)
+
+  if Global.getVar("HighestBettingMoney") == nil then
+    self.UI.setAttribute("call", "active", false)
+
+    self.UI.setAttribute("ddadang", "active", false)
+
+  else
+    self.UI.setAttribute("check", "active", false)
+
+    if Global.call("CalculateBettingMoney", {type = "check"}) <= Global.getVar("HighestBettingMoney") then
+      self.UI.setAttribute("check", "active", false)
+    end
+
+    if Global.call("CalculateBettingMoney", {type = "bbing"}) <= Global.getVar("HighestBettingMoney") then
+      self.UI.setAttribute("bbing", "active", false)
+    end
+
+    if Global.call("CalculateBettingMoney", {type = "half"}) <= Global.getVar("HighestBettingMoney") then
+      self.UI.setAttribute("half", "active", false)
+    end
+
+    if Global.call("CalculateBettingMoney", {type = "quarter"}) <= Global.getVar("HighestBettingMoney") then
+      self.UI.setAttribute("quarter", "active", false)
+    end
+  end
+
+  if Global.call("GetPlayerMoney", {colour = player.color}) <= 0 then
+    self.UI.setAttribute("bbing", "active", false)
+    self.UI.setAttribute("ddadang", "active", false)
+    self.UI.setAttribute("half", "active", false)
+    self.UI.setAttribute("quarter", "active", false)
+  end
+
+end
+
+function DisableBettingButtons(player)
+  self.UI.setAttribute("call", "active", false)
+  self.UI.setAttribute("check", "active", false)
+  self.UI.setAttribute("bbing", "active", false)
+  self.UI.setAttribute("ddadang", "active", false)
+  self.UI.setAttribute("half", "active", false)
+  self.UI.setAttribute("quarter", "active", false)
+  self.UI.setAttribute("die", "active", false)
+end
+
+function EnableJoinButtons(player)
+  if Global.call("getPlayerState", {colour = player.color, type = "join"}) == true then
+    self.UI.setAttribute("join", "active", false)
+    self.UI.setAttribute("leave", "active", true)
+    self.UI.setAttribute("showhand", "active", false)
+    self.UI.setAttribute("hidehand", "active", false)
+  else
+    self.UI.setAttribute("join", "active", true)
+    self.UI.setAttribute("leave", "active", false)
+
+    if Global.call("getPlayerState", {colour = player.color, type = "showHand"}) == true then
+      self.UI.setAttribute("showhand", "active", false)
+      self.UI.setAttribute("hidehand", "active", true)
+    else
+      self.UI.setAttribute("showhand", "active", true)
+      self.UI.setAttribute("hidehand", "active", false)
+    end
+  end
+end
+
+function DisableJoinButtons(player)
+  self.UI.setAttribute("join", "active", false)
+  self.UI.setAttribute("leave", "active", false)
+  self.UI.setAttribute("showhand", "active", false)
+  self.UI.setAttribute("hidehand", "active", false)
+end
+
+--- Button Functions ---
+function Bet_Call(player)
+  Global.call("Betting", {colour = player.color, type = "call"})
+end
+
+function Bet_Check(player)
+  Global.call("Betting", {colour = player.color, type = "check"})
+end
+
+function Bet_BBing(player)
+  Global.call("Betting", {colour = player.color, type = "bbing"})
+end
+
+function Bet_DDadang(player)
+  Global.call("Betting", {colour = player.color, type = "ddadang"})
+end
+
+function Bet_Half(player)
+  Global.call("Betting", {colour = player.color, type = "half"})
+end
+
+function Bet_Quarter(player)
+  Global.call("Betting", {colour = player.color, type = "quarter"})
+end
+
+function Bet_Die(player)
+  Global.call("Betting", {colour = player.color, type = "die"})
+end
+
+
+function Join(player)
+  Global.call("setPlayerState", {colour = player.color, type = "join", value = true})
+  Global.call("setPlayerState", {colour = player.color, type = "showHand", value = false})
+
+  self.UI.setAttribute("join", "active", false)
+  self.UI.setAttribute("leave", "active", true)
+  self.UI.setAttribute("showhand", "active", false)
+  self.UI.setAttribute("hidehand", "active", false)
+end
+
+function Leave(player)
+  Global.call("setPlayerState", {colour = player.color, type = "join", value = false})
+
+  self.UI.setAttribute("join", "active", true)
+  self.UI.setAttribute("leave", "active", false)
+  self.UI.setAttribute("showhand", "active", true)
+  self.UI.setAttribute("hidehand", "active", false)
+end
+
+function ShowHand(player)
+  Global.call("setPlayerState", {colour = player.color, type = "showHand", value = true})
+
+  self.UI.setAttribute("join", "active", true)
+  self.UI.setAttribute("leave", "active", false)
+  self.UI.setAttribute("showhand", "active", false)
+  self.UI.setAttribute("hidehand", "active", true)
+end
+
+function HideHand(player)
+  Global.call("setPlayerState", {colour = player.color, type = "showHand", value = false})
+
+  self.UI.setAttribute("join", "active", true)
+  self.UI.setAttribute("leave", "active", false)
+  self.UI.setAttribute("showhand", "active", true)
+  self.UI.setAttribute("hidehand", "active", false)
+end

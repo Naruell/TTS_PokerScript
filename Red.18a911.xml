@@ -1,0 +1,32 @@
+<TableLayout cellSpacing="4" width="420" height="180" columnWidths="210 250" cellBackgroundColor="clear" offsetXY="105 0">
+  <Row>
+    <Cell>
+      <HorizontalLayout spacing="1">
+        <Button id="call" onClick="Bet_Call" active="false" fontSize="14" fontStyle="Bold">콜</Button>
+      </HorizontalLayout>
+    </Cell>
+  </Row>
+  <Row>
+    <Cell>
+      <HorizontalLayout spacing="3">
+        <Button id="check" onClick="Bet_Check" active="false" fontSize="14" fontStyle="Bold">체크</Button>
+        <Button id="bbing" onClick="Bet_BBing" active="false" fontSize="14" fontStyle="Bold">삥</Button>
+        <Button id="half" onClick="Bet_Half" active="false" fontSize="14" fontStyle="Bold">하프</Button>
+      </HorizontalLayout>
+    </Cell>
+  </Row>
+  <Row>
+    <Cell>
+        <HorizontalLayout spacing="3">
+            <Button id="quarter" onClick="Bet_Quarter" active="false" fontSize="14" fontStyle="Bold">쿼터</Button>
+            <Button id="ddadang" onClick="Bet_DDadang" active="false" fontSize="14" fontStyle="Bold">따당</Button>
+            <Button id="die" onClick="Bet_Die" active="false" fontSize="14" fontStyle="Bold" color="#333333" textColor="#FFFFFF">다이</Button>
+
+            <Button id="join" onClick="Join" active="false" fontSize="14" fontStyle="Bold">참가</Button>
+            <Button id="leave" onClick="Leave" active="true" fontSize="14" fontStyle="Bold">불참</Button>
+            <Button id="showhand" onClick="ShowHand" active="false" fontSize="14" fontStyle="Bold">전지적 시점 활성화</Button>
+            <Button id="hidehand" onClick="HideHand" active="false" fontSize="14" fontStyle="Bold">전지적 시점 비활성화</Button>
+        </HorizontalLayout>
+    </Cell>
+  </Row>
+</TableLayout>
